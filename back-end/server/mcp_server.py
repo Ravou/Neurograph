@@ -182,10 +182,22 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                 "status": "error"
             }
         
+        # Sérialiser en JSON avec gestion des types spéciaux
+        def json_serializer(obj):
+            """Sérialise les objets non-JSON en string"""
+            if hasattr(obj, 'iso_format'):
+                return obj.iso_format()
+            if hasattr(obj, 'to_native'):
+                native = obj.to_native()
+                if hasattr(native, 'isoformat'):
+                    return native.isoformat()
+                return native
+            raise TypeError(f"Type {type(obj)} not serializable")
+        
         return [
             TextContent(
                 type="text",
-                text=json.dumps(result, indent=2, ensure_ascii=False)
+                text=json.dumps(result, indent=2, ensure_ascii=False, default=json_serializer)
             )
         ]
             

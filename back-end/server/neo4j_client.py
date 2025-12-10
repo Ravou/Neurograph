@@ -10,6 +10,7 @@ from neo4j import GraphDatabase
 from dotenv import load_dotenv
 from typing import List, Dict, Any, Optional
 import logging
+from datetime import datetime as dt
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -47,6 +48,38 @@ class Neo4jConnector:
         if self.driver:
             self.driver.close()
             logger.info("🔌 Neo4j connection closed")
+    
+    def _serialize_value(self, value: Any) -> Any:
+        """Convertit les valeurs Neo4j en types JSON-serialisables"""
+        if value is None:
+            return None
+        
+        # DateTime de Neo4j
+        if hasattr(value, 'iso_format'):
+            return value.iso_format()
+        if hasattr(value, 'to_native'):
+            native = value.to_native()
+            if isinstance(native, dt):
+                return native.isoformat()
+            return native
+        
+        # Listes
+        if isinstance(value, list):
+            return [self._serialize_value(item) for item in value]
+        
+        # Dictionnaires
+        if isinstance(value, dict):
+            return {k: self._serialize_value(v) for k, v in value.items()}
+        
+        # Types de base (str, int, float, bool)
+        if isinstance(value, (str, int, float, bool)):
+            return value
+        
+        # Autres types - convertir en string
+        try:
+            return str(value)
+        except:
+            return None
     
     def run_query(self, query: str, parameters: Dict = None) -> List[Dict]:
         """
@@ -159,6 +192,9 @@ class Neo4jConnector:
                 node = record["n"]
                 node_props = dict(node)
                 
+                # Sérialiser les propriétés pour éviter les erreurs JSON
+                node_props_serialized = self._serialize_value(node_props)
+                
                 # Filtrage en Python - évite complètement les problèmes de type Cypher
                 found = self._check_node_contains_query(node_props, query_lower)
                 
@@ -166,7 +202,7 @@ class Neo4jConnector:
                     filtered_results.append({
                         "elementId": record["elementId"],
                         "labels": record["labels"],
-                        "properties": node_props
+                        "properties": node_props_serialized
                     })
                 
                 if len(filtered_results) >= limit:
