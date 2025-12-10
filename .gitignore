@@ -1,0 +1,47 @@
+# -----------------------------
+# Environnements virtuels
+# -----------------------------
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# -----------------------------
+# Fichiers temporaires et logs
+# -----------------------------
+*.log
+*.tmp
+*.swp
+*.DS_Store
+
+# -----------------------------
+# Fichiers de configuration locaux
+# -----------------------------
+.env
+*.env
+
+# -----------------------------
+# Bases de données locales
+# -----------------------------
+*.sqlite3
+*.db
+
+# -----------------------------
+# IDE / éditeurs
+# -----------------------------
+.vscode/
+.idea/
+*.iml
+
+# -----------------------------
+# Python packaging
+# -----------------------------
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+back-end/
