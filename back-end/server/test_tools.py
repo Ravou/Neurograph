@@ -1,33 +1,43 @@
+"""
+Test MCP tools safely using sandbox nodes in Neo4j
+"""
+
 import asyncio
 import json
-from mcp_server import call_tool  # ton serveur MCP renommé
-from neo4j_client import Neo4jConnector
+from mcp_server import call_tool
 
-async def test_tool_calls():
-    # On simule la connexion Neo4j
-    connector = Neo4jConnector()
-    connector.connect()
+sandbox_nodes = [
+    {"type": "Concept", "properties": {"name": "sandbox_node_1"}, "relations": []},
+    {"type": "Concept", "properties": {"name": "sandbox_node_2"}, "relations": []},
+    {"type": "Concept", "properties": {"name": "sandbox_node_3"}, "relations": []},
+]
 
-    # Liste des tool calls à tester
-    tests = [
-        {
-            "name": "search_graph_context",
-            "arguments": {"query": "test", "limit": 3}
-        },
-        {
-            "name": "get_node_relationships",
-            "arguments": {"node_id": "node_1"}
-        },
-        {
-            "name": "save_graph_context",
-            "arguments": {"type": "Concept", "properties": {"name": "New Node"}, "relations": []}
-        }
-    ]
+async def main():
+    created_node_ids = []
 
-    for t in tests:
-        print(f"\n🛠 Testing tool: {t['name']}")
-        result = await call_tool(t['name'], t['arguments'])
-        for r in result:
-            print(json.dumps(r.text, indent=2, ensure_ascii=False))
+    # Create sandbox nodes
+    for node in sandbox_nodes:
+        result = await call_tool("save_graph_context", node)
+        node_data = json.loads(result[0].text)
+        created_node_ids.append(node_data.get("node_id"))
+        print(f"Created {node['properties']['name']} -> {node_data.get('node_id')}")
 
-asyncio.run(test_tool_calls())
+    # Search sandbox nodes
+    result_search = await call_tool("search_graph_context", {"query": "sandbox_node", "limit": 5})
+    print("Search result:", json.dumps(result_search[0].text, indent=2))
+
+    # Save a new node with a relation to first node
+    new_node = {
+        "type": "Concept",
+        "properties": {"name": "sandbox_node_new"},
+        "relations": [{"target_id": created_node_ids[0], "type": "RELATED_TO"}]
+    }
+    result_save = await call_tool("save_graph_context", new_node)
+    print("Saved new node:", json.dumps(result_save[0].text, indent=2))
+
+    # Get relationships of first sandbox node
+    result_rel = await call_tool("get_node_relationships", {"node_id": created_node_ids[0]})
+    print("Relationships:", json.dumps(result_rel[0].text, indent=2))
+
+if __name__ == "__main__":
+    asyncio.run(main())
