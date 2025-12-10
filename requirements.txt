@@ -5,3 +5,4 @@ python-dotenv==1.0.0
 requests==2.31.0
 pydantic>=2.11.0,<3.0.0  # pip prendra la dernière version disponible, par ex. 2.12.5
 mcp==1.23.3
+gunicorn
